@@ -63,9 +63,13 @@ def main(server="localhost", port=12000):
                         data = f.read(512)
                         while (len(data) > 0):
                             if (clientSocket.sendto(data, (server, port))):
-                                data = f.read(512)
-                                if (len(data) == 0): # Si es un fichero multiplo de 512 enviamos un paquete con 0 bytes de datos para comunicar al cliente que hemos acabado
-                                    clientSocket.sendto(data, (server, port))
+                                if(len(data) == 512):
+                                    data = f.read(512)
+                                    if (len(data) == 0): # Si es un fichero multiplo de 512 enviamos un paquete con 0 bytes de datos para comunicar al cliente que hemos acabado
+                                        print("blanco")
+                                        clientSocket.sendto(data, (server, port))
+                                else:
+                                    data = bytes()
                     
                     except IOError as e:
                         print("File requested not found")
