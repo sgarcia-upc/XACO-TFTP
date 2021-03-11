@@ -51,19 +51,30 @@ def main(server="localhost", port=12000):
                     
 
             elif command[0] == 'put':
-                if len(command) == 2: # subimos el fichero X 
-                    pass
-                elif len(command) == 3: # subimos fichero X con nombre Y
-                    pass
-                else:
+                if len(command) != 2 or len(command) != 3:
                     invCommand = True 
-
-                if not invCommand:
+                
+                else:
+                    #enviamos el comando con el fichero que vamos a subir
                     clientSocket.sendto(msg.encode(),(server,port))
-                    modifiedMessage, serverAddress = clientSocket.recvfrom(512)
-
-                    # Print the converted text and then close the socket
-                    print (modifiedMessage.decode())
+                    try:
+                        # TODO: if file not exists, what happends with the client
+                        f = open(fichero_origen, "rb")
+                        data = f.read(512)
+                        while (len(data) > 0):
+                            if (serverSocket.sendto(data, clientAddress)):
+                                data = f.read(512)
+                                if (len(data) == 0): # Si es un fichero multiplo de 512 enviamos un paquete con 0 bytes de datos para comunicar al cliente que hemos acabado
+                                    serverSocket.sendto(data, clientAddress)
+                    
+                    except IOError as e:
+                        print("File requested not found")
+                        print(e)
+                    finally:
+                        try:
+                            f.close()
+                        except:
+                            pass
 
             elif command[0] == 'exit':
                 sortir = True 

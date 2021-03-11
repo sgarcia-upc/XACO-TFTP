@@ -45,10 +45,36 @@ def main(port=12000):
         if (command[0] == "put"):
             if len(command) == 2:
                 print("PUT {}".format(command[1])) 
+                fichero_destino=command[1]
         
             if len(command) == 3:
                 print("PUT {} -> {}".format(command[1], command[2])) 
+                fichero_destino=command[2]
 
+ 
+		   data, serverAddress = clientSocket.recvfrom(512)
+		   try:
+				f = open(fichero_destino, "wb")
+
+				while (data):
+					 f.write(data)
+
+					 if (len(data) == 512):
+						  # Vamos a pedir mas datos en caso de que los haya
+						  data, serverAddress = clientSocket.recvfrom(512)
+					 else:
+						  data = bytes()
+
+		   except IOError:
+				print("File requested not found")
+		   except timeout:
+				print("timeout")
+		   finally:
+				try:
+					 f.close()
+					 serverSocket.close()
+				except:
+					 pass
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
