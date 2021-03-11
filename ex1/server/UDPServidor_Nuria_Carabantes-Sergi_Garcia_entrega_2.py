@@ -52,7 +52,7 @@ def main(port=12000):
                 fichero_destino=command[2]
 
  
-            data, serverAddress = clientSocket.recvfrom(512)
+            data, serverAddress = serverSocket.recvfrom(512)
             try:
                 f = open(fichero_destino, "wb")
 
@@ -61,7 +61,7 @@ def main(port=12000):
 
                     if (len(data) == 512):
                         # Vamos a pedir mas datos en caso de que los haya
-                        data, serverAddress = clientSocket.recvfrom(512)
+                        data, serverAddress = serverSocket.recvfrom(512)
                     else:
                         data = bytes()
 
