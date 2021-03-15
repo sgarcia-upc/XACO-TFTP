@@ -4,16 +4,21 @@ import argparse
 
 from socket import *
 
-def main(server="localhost", port=12000):
+def main(server="localhost", port=12000, size=512):
     sortir = False
-    clientSocket = socket(AF_INET, SOCK_DGRAM)
     while sortir == False:
+        clientSocket = socket(AF_INET, SOCK_DGRAM)
         invCommand = False
         # Read in some text from the user
         msg = input('> ')
         command = msg.split()
         if len(command) > 0:
-            if command[0] == 'get':
+            if command[0] == '?':
+                print(" get <file>\t\t Download specified file from the server")
+                print(" post <file> [name]\t Upload specified file to the server. The optional name parameter can be used to upload the file with another name")
+                print(" exit\t\t\t Exit from this program")
+                print(" ?\t\t\t Show this help")
+            elif command[0] == 'get':
                 if len(command) != 2:
                     invCommand = True
 
@@ -24,16 +29,16 @@ def main(server="localhost", port=12000):
                     # TODO: receive ok msg 
                     # receive file
 
-                    data, serverAddress = clientSocket.recvfrom(512)
+                    data, serverAddress = clientSocket.recvfrom(size)
                     try:
                         f = open(command[1], "wb")
                         
                         while (data):
                             f.write(data)
                             
-                            if (len(data) == 512):
+                            if (len(data) == size):
                                 # Vamos a pedir mas datos en caso de que los haya
-                                data, serverAddress = clientSocket.recvfrom(512)
+                                data, serverAddress = clientSocket.recvfrom(size)
                             else:
                                 data = bytes()
                             
@@ -60,13 +65,12 @@ def main(server="localhost", port=12000):
                     try:
                         # TODO: if file not exists, what happends with the client
                         f = open(command[1], "rb")
-                        data = f.read(512)
+                        data = f.read(size)
                         while (len(data) > 0):
                             if (clientSocket.sendto(data, (server, port))):
-                                if(len(data) == 512):
-                                    data = f.read(512)
-                                    if (len(data) == 0): # Si es un fichero multiplo de 512 enviamos un paquete con 0 bytes de datos para comunicar al cliente que hemos acabado
-                                        print("blanco")
+                                if(len(data) == size):
+                                    data = f.read(size)
+                                    if (len(data) == 0): # Si es un fichero multiplo de size enviamos un paquete con 0 bytes de datos para comunicar al cliente que hemos acabado
                                         clientSocket.sendto(data, (server, port))
                                 else:
                                     data = bytes()
@@ -89,9 +93,10 @@ def main(server="localhost", port=12000):
 
         if invCommand:
             print("Invalid command")
+
+        clientSocket.close()
     
-    clientSocket.close()
-    print("bye!")
+    print("Goodbye !!!")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
