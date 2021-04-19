@@ -26,16 +26,17 @@ def main(server="localhost", port=12000, size=512):
                 if not invCommand:
                     # Send file name
                     clientSocket.send(msg.encode())
+                    clientSocket.settimeout(2)
 
-                    # TODO: receive ok msg 
+                    # TODO: receive ok msg
                     # receive file
 
                     data = clientSocket.recv(size)
                     print(" recibiendo... %s" %len(data))
                     try:
                         f = open(command[1], "wb")
-                        
-                        while (data):
+
+                        while (len(data) > 0):
                             f.write(data)
                             if (len(data) == size):
                                 # Vamos a pedir mas datos en caso de que los haya
@@ -43,23 +44,24 @@ def main(server="localhost", port=12000, size=512):
                             else:
                                 data = bytes()
                             print(" recibiendo... %s" %len(data))
+
+                    except timeout:
+                        print(" recibiendo... 0")
                     except IOError:
                         print("File requested not found")
-                    except timeout:
-                        print("timeout")
                     finally:
                         try:
                             f.close()
                             clientSocket.close()
                         except:
                             pass
-                    
-                    
+
+
 
             elif command[0] == 'put':
                 if len(command) != 2 and len(command) != 3:
-                    invCommand = True 
-                
+                    invCommand = True
+
                 else:
                     #enviamos el comando con el fichero que vamos a subir
                     clientSocket.send(msg.encode())
@@ -77,7 +79,7 @@ def main(server="localhost", port=12000, size=512):
                                 else:
                                     data = bytes()
                             print("enviando... %s" %len(data))
-                    
+
                     except IOError as e:
                         print("File requested not found")
                         print(e)
@@ -88,17 +90,17 @@ def main(server="localhost", port=12000, size=512):
                             pass
 
             elif command[0] == 'exit':
-                sortir = True 
+                sortir = True
             else:
                 invCommand = True
-        else: 
+        else:
             invCommand = True
 
         if invCommand:
             print("Invalid command")
 
         clientSocket.close()
-    
+
     print("Goodbye !!!")
 
 if __name__ == "__main__":
@@ -107,7 +109,7 @@ if __name__ == "__main__":
     parser.add_argument('-p','--port', help='Puerto destino', default=12000)
     parser.add_argument('--size', help='Tamaño paquete', default=512)
     args = parser.parse_args()
-    
+
     if (int(args.port) < 0 or int(args.port) > 2**16-1):
         print("El puerto debe ser un numero desde el 0 al {}".format(2**16-1))
         sys.exit(1)
