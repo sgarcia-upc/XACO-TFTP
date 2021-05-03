@@ -70,9 +70,8 @@ def decodificate_wrq(pkg):
 
 def generate_data(nck, data):
     #pkg = op_codes["DATA"]  
-    pkg =  struct.pack('>H', int(nck))
-    print(type(pkg))
-    print(bytes(pkg))
+    pkg =  struct.pack('>H', 43)
+    print_pkg_in_hex(pkg)
     #pkg = pkg + bytes(data, "utf-8")
 
 def decodificate_data(pkg):
@@ -80,6 +79,15 @@ def decodificate_data(pkg):
     data = pkg[4:]
     return num_block, data
 
+
+def print_pkg_in_hex(pkg):
+    i = 0
+    for x in bytearray(pkg).hex():
+        if i % 2 == 0:
+            print("\\x", end="")
+        print(x.upper(), end="")
+        i+=1
+    print()
 
 #pkg = generate_rrq("meh.txt", transmission_mode[0])
 pkg = generate_data(44, "klashdfkhasdkjfh")
