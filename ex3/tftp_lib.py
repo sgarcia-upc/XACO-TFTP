@@ -6,10 +6,9 @@ PORT_MAX = 65535
 def generateTID():
     return random.randint(PORT_MIN, PORT_MAX)
 
-def send_file(socket, server, port)
-    socket.sendto(msg.encode(),(server,port))
+def send_file(socket, server, port, filename, size):
     try:
-        f = open(command[1], "rb")
+        f = open(filename, "rb")
         data = f.read(size)
         print("enviando... %s" %len(data))
         while (len(data) > 0):
@@ -30,14 +29,14 @@ def send_file(socket, server, port)
         except:
             pass
 
-def recv_file(socket):
+def recv_file(socket, filename, size):
     """
     esperamos los data y enviamos ack cuando los recibimos
     """
     data, addr = socket.recvfrom(size)
     print(" recibiendo... %s" %len(data))
     try:
-        f = open(command[1], "wb")
+        f = open(filename, "wb")
         
         while (data):
             f.write(data)
@@ -56,6 +55,5 @@ def recv_file(socket):
     finally:
         try:
             f.close()
-            socket.close()
         except:
             pass

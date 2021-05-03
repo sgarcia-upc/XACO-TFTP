@@ -2,6 +2,7 @@
 import sys
 import time
 import argparse
+import tftp_lib
 
 from socket import *
 
@@ -23,30 +24,8 @@ def main(port=12000, size=512):
         if len(command) > 0:
             if (command[0] == "get"):
                 print("GET /{}".format(command[1])) 
-                # Check if file exists 
-                try:
-                    f = open(command[1], "rb")
-                    data = f.read(size)
-                    print(" enviando... %s" %len(data))
-                    while (len(data) > 0):
-                        if (serverSocket.sendto(data, clientAddress)):
-                            if(len(data) == size):
-                                data = f.read(size)
-                                if (len(data) == 0): # Si es un fichero multiplo de size enviamos un paquete con 0 bytes de datos para comunicar al cliente que hemos acabado
-                                    serverSocket.sendto(data, clientAddress)
-                            else:
-                                data = bytes()
-                        print(" enviando... %s" %len(data))
-                        
-                except IOError as e:
-                    print("File requested not found")
-                    serverSocket.sendto(bytes(), clientAddress) ## TEMPORAL, send 0 bytes to the client, this creates a new blank file
-                    print(e)
-                finally:
-                    try:
-                        f.close()
-                    except e:
-                        print(e)
+                print(clientAddress)
+                tftp_lib.send_file(serverSocket, clientAddress[0], clientAddress[1], command[1], size)
     
             if (command[0] == "put"):
                 if len(command) == 2:
@@ -56,31 +35,8 @@ def main(port=12000, size=512):
                 if len(command) == 3:
                     print("PUT {} -> {}".format(command[1], command[2])) 
                     fichero_destino=command[2]
-    
-                data, serverAddress = serverSocket.recvfrom(size)
-                print("recibiendo... %s" %len(data))
-                try:
-                    f = open(fichero_destino, "wb")
-                    
-                    while (data):
-                        f.write(data)
-                        if (len(data) == size):
-                            # Vamos a pedir mas datos en caso de que los haya
-                            data, serverAddress = serverSocket.recvfrom(size)
-                        else:
-                            data = bytes()
-                        print("recibiendo... %s" %len(data))
-    
-                except IOError:
-                     print("File requested not found")
-                except timeout:
-                     print("timeout")
-                finally:
-                     try:
-                        f.close()
-                        #serverSocket.close()
-                     except:
-                        pass
+  
+                tftp_lib.recv_file(serverSocket, fichero_destino, size) 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

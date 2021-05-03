@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+import tftp_lib
 
 from socket import *
 
@@ -25,67 +26,17 @@ def main(server="localhost", port=12000, size=512):
                 if not invCommand:
                     # Send file name
                     clientSocket.sendto(msg.encode(),(server,port))
-
-                    # TODO: receive ok msg 
-                    # receive file
-
-                    data, serverAddress = clientSocket.recvfrom(size)
-                    print(" recibiendo... %s" %len(data))
-                    try:
-                        f = open(command[1], "wb")
-                        
-                        while (data):
-                            f.write(data)
-                            
-                            if (len(data) == size):
-                                # Vamos a pedir mas datos en caso de que los haya
-                                data, serverAddress = clientSocket.recvfrom(size)
-                            else:
-                                data = bytes()
-                            print(" recibiendo... %s" %len(data))
-                            
-                    except IOError:
-                        print("File requested not found")
-                    except timeout:
-                        print("timeout")
-                    finally:
-                        try:
-                            f.close()
-                            clientSocket.close()
-                        except:
-                            pass
-                    
-                    
+                    tftp_lib.recv_file(clientSocket, command[1], size) 
+                    clientSocket.close()
 
             elif command[0] == 'put':
                 if len(command) != 2 and len(command) != 3:
                     invCommand = True 
                 
                 else:
-                    #enviamos el comando con el fichero que vamos a subir
                     clientSocket.sendto(msg.encode(),(server,port))
-                    try:
-                        # TODO: if file not exists, what happends with the client
-                        f = open(command[1], "rb")
-                        data = f.read(size)
-                        print("enviando... %s" %len(data))
-                        while (len(data) > 0):
-                            if (clientSocket.sendto(data, (server, port))):
-                                if(len(data) == size):
-                                    data = f.read(size)
-                                    if (len(data) == 0): # Si es un fichero multiplo de size enviamos un paquete con 0 bytes de datos para comunicar al cliente que hemos acabado
-                                        clientSocket.sendto(data, (server, port))
-                                else:
-                                    data = bytes()
-                            print("enviando... %s" %len(data))
-                    except IOError as e:
-                        print("File requested not found")
-                        print(e)
-                    finally:
-                        try:
-                            f.close()
-                        except:
-                            pass
+                    tftp_lib.send_file(clientSocket, server, port, command[1], size)
+                    clientSocket.close()
 
             elif command[0] == 'exit':
                 sortir = True 
