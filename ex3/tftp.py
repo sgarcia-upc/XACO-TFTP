@@ -16,6 +16,16 @@ op_codes = {
     "ERR" : struct.pack('BB', 0, 5), #ERR
 }
 
+err_codes = {
+    "NotDefined" : struct.pack('BB', 0, 1), 
+    "FileNotFound" : struct.pack('BB', 0, 2),
+    "AccesViolation": struct.pack('BB', 0, 3),
+    "DiskFull" : struct.pack('BB', 0, 4), 
+    "IllegalOperation" : struct.pack('BB', 0, 5), 
+    "FileAlredyExist" : struct.pack('BB', 0, 6), 
+    "NoSuchUser" : struct.pack('BB', 0, 7), 
+}
+
 def find_key_by_value(d,val):
     for key, value in d.items():
          if val == value:
@@ -69,17 +79,25 @@ def decodificate_wrq(pkg):
     return decodificate_rrq
 
 def generate_data(nck, data):
-    #pkg = op_codes["DATA"]  
-    pkg =  struct.pack('>H', 43)
-    print_pkg_in_hex(pkg)
-    #pkg = pkg + bytes(data, "utf-8")
+    pkg = op_codes["DATA"]  
+    pkg = pkg + struct.pack('>H', nck)
+    pkg = pkg + bytes(data, "utf-8")
+    return pkg
 
 def decodificate_data(pkg):
-    num_block = pkg[2] + pkg[3]
+    num_block = pkg[3]|pkg[2]<<8
     data = pkg[4:]
     return num_block, data
 
-
+def generate_ack(nck):
+    pkg = op_codes["ACK"]  
+    pkg = pkg + struct.pack('>H', nck)
+    return pkg
+    
+def decodificate_ack(pkg):
+    num_block = pkg[3]|pkg[2]<<8
+    return num_block
+    
 def print_pkg_in_hex(pkg):
     i = 0
     for x in bytearray(pkg).hex():
@@ -88,16 +106,43 @@ def print_pkg_in_hex(pkg):
         print(x.upper(), end="")
         i+=1
     print()
+  
+def generate_err(err_code, msg):
+    pkg = op_codes["ERR"]  
+    pkg = pkg + err_codes[err_code]
+    pkg = pkg + bytes(msg, "utf-8")
+    pkg = pkg + struct.pack('B', 0) 
+    return pkg;
+    
+def decodificate_err(pkg):
+    err_code = struct.pack('BB', 0, pkg[2] + pkg[3])
+    err_code = find_key_by_value(err_codes, err_code)
+    msg = ""
+    for byte in pkg[4:]:
+        if (byte == 0):
+            break
+
+        msg += chr(byte)
+    return err_code, msg
+    
+
 
 #pkg = generate_rrq("meh.txt", transmission_mode[0])
-pkg = generate_data(44, "klashdfkhasdkjfh")
-#op_code = decodificate_opcode(pkg)
+# ~ pkg = generate_data(44, "klashdfkhasdkjfh")
+# ~ pkg = generate_ack(30001)
+pkg = generate_err("FileNotFound","meh.txt no ta")
+op_code = decodificate_opcode(pkg)
 
-#print(op_code)
-#if op_code == "RRQ":
-#    filename, mode = decodificate_rrq(pkg)
-#elif op_code == "WRQ":
-#    filename, mode = decodificate_wrq(pkg)
-#elif op_code == "DATA":
-#    num_block, data = decodificate_data(pkg) 
-#    print("DATA: %s -- %s".format(num_block, data))
+if op_code == "RRQ":
+    filename, mode = decodificate_rrq(pkg)
+elif op_code == "WRQ":
+    filename, mode = decodificate_wrq(pkg)
+elif op_code == "DATA":
+    num_block, data = decodificate_data(pkg) 
+    print("DATA: %s -- %s"%(num_block, data))
+elif op_code == "ACK":
+    num_block = decodificate_ack(pkg) 
+    print("ACK: %s"%(num_block))
+elif op_code == "ERR":
+    err_code, msg = decodificate_err(pkg) 
+    print("ERR: %s -- %s"%(err_code, msg))
