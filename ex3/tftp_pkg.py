@@ -85,7 +85,10 @@ def decodificate_wrq(pkg):
 def generate_data(nck, data):
     pkg = op_codes["DATA"]
     pkg = pkg + struct.pack('>H', nck)
-    pkg = pkg + bytes(data, "utf-8")
+    if (isinstance(data, str)):
+        pkg = pkg + bytes(data, "utf-8")
+    else:
+        pkg = pkg + data
     return pkg
 
 
