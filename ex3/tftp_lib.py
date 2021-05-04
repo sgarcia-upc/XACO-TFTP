@@ -17,25 +17,49 @@ def send_file(socket, server, port, filename, size, modo):
         else:
             print("NoSuchMODO")
             sys.exit(1)
-
+        block_num_ack = 0
         block_num = 1
         file_data = f.read(size)
         data = pkg.generate_data(block_num, file_data)
-        print("enviando... %s" %len(file_data))
+        print("sending DATA: %s -- %s"%(block_num, len(file_data)))        
         # TODO: if file is empty
         while (len(file_data) > 0):
+            block_num = block_num % 65535
+            if(block_num == 0):
+                block_num = 1
             if (socket.sendto(data, (server, port))):
-                # TODO: CHECK ACK
+                # ~ ack, add = socket.recvfrom(4)
+                # ~ #TODO: check op code
+                # ~ block_num_ack = pkg.decodificate_ack(ack)
+                # ~ print("receiving ACK: %s"%(block_num_ack))
+                while(block_num != block_num_ack):
+                    socket.sendto(data, (server, port))
+                    ack, add = socket.recvfrom(4)
+                    block_num_ack =  pkg.decodificate_ack(ack)
+                    print("receiving ACK: %s"%(block_num_ack))
+                block_num+=1
                 if(len(file_data) == size):
                     file_data = f.read(size)
-                    block_num+=1
                     data = pkg.generate_data(block_num, file_data)
+                    print("receiving ACK: %s"%(block_num_ack))
                     if (len(file_data) == 0): 
                         socket.sendto(data, (server, port))
+                        while(block_num != block_num_ack):
+                            socket.sendto(data, (server, port))
+                            ack, add = socket.recvfrom(4)
+                            block_num_ack =  pkg.decodificate_ack(ack)
+                            print("receiving ACK: %s"%(block_num_ack))
+                        block_num+=1
                 else:
                     file_data = bytes()
-
-            print("enviando... %s" %len(file_data))
+                    while(block_num != block_num_ack):
+                            socket.sendto(data, (server, port))
+                            ack, add = socket.recvfrom(4)
+                            block_num_ack =  pkg.decodificate_ack(ack)
+                            print("receiving ACK: %s"%(block_num_ack))
+                    
+            print("sending DATA: %s -- %s"%(block_num, len(file_data)))
+            
     except IOError as e:
         print("File requested not found")
         print(e)
@@ -45,16 +69,18 @@ def send_file(socket, server, port, filename, size, modo):
         except:
             pass
 
-def recv_file(socket, filename, size, modo):
+def recv_file(socket, server, port, filename, size, modo):
     """
     esperamos los data y enviamos ack cuando los recibimos
     """
     data, addr = socket.recvfrom(4+size)
-    #TODO: mirar si el data tiene op_code data...
+    #TODO: mirar si el data tiene op_code data...   
     num_block, file_data = pkg.decodificate_data(data)
-    #TODO: enviar ACK
-
-    print(" recibiendo... %s" %len(file_data))
+    print("receiving DATA: %s -- %s"%(num_block, len(file_data)))
+    ack = pkg.generate_ack(num_block)
+    socket.sendto(ack, (server, port))
+    print("sending ACK: %s"%(num_block))
+ 
     try:
         if modo=="netascii":
             f = open(filename, "w")
@@ -72,10 +98,16 @@ def recv_file(socket, filename, size, modo):
                 data, addr = socket.recvfrom(4+size)
                 #TODO: mirar si el data tiene op_code data...
                 num_block, file_data = pkg.decodificate_data(data)
-                #TODO: enviar ACK
+                ack = pkg.generate_ack(num_block)
+                socket.sendto(ack, (server, port))
+                print("sending ACK: %s"%(num_block))
             else:
                 file_data = bytes()
-            print(" recibiendo... %s" %len(file_data))
+                ack = pkg.generate_ack(num_block)
+                socket.sendto(ack, (server, port))
+                print("sending ACK: %s"%(num_block))
+            
+            print("receiving DATA: %s -- %s"%(num_block, len(file_data)))
             
     except IOError:
         print("File requested not found")

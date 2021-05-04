@@ -26,7 +26,7 @@ def main(server="localhost", port=12000, size=512):
                 if not invCommand:
                     # Send file name
                     clientSocket.sendto(msg.encode(),(server,port))
-                    tftp_lib.recv_file(clientSocket, command[1], size, "octet")
+                    tftp_lib.recv_file(clientSocket, server, port, command[1], size, "octet")
                     clientSocket.close()
 
             elif command[0] == 'put':

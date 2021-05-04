@@ -36,7 +36,7 @@ def main(port=12000, size=512):
                     print("PUT {} -> {}".format(command[1], command[2])) 
                     fichero_destino=command[2]
   
-                tftp_lib.recv_file(serverSocket, fichero_destino, size, "octet") 
+                tftp_lib.recv_file(serverSocket, clientAddress[0], clientAddress[1], fichero_destino, size, "octet") 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
