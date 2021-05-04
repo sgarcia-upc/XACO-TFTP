@@ -2,6 +2,7 @@
 import sys
 import argparse
 import tftp_lib
+import tftp_pkg as pkg
 
 from socket import *
 
@@ -25,8 +26,11 @@ def main(server="localhost", port=12000, size=512):
 
                 if not invCommand:
                     # Send file name
-                    clientSocket.sendto(msg.encode(),(server,port))
-                    tftp_lib.recv_file(clientSocket, server, port, command[1], size, "octet")
+                    file = command[1]
+                    mode = "octet"
+                    msg = pkg.generate_rrq(file, mode) 
+                    clientSocket.sendto(msg,(server,port))
+                    tftp_lib.recv_file(clientSocket, server, port, file, size, "mode")
                     clientSocket.close()
 
             elif command[0] == 'put':
@@ -34,8 +38,12 @@ def main(server="localhost", port=12000, size=512):
                     invCommand = True
 
                 else:
-                    clientSocket.sendto(msg.encode(),(server,port))
-                    tftp_lib.send_file(clientSocket, server, port, command[1], size, "octet")
+                    file = command[1]
+                    mode = "octet"
+                    msg = pkg.generate_wrq(file, mode)
+                    clientSocket.sendto(msg,(server,port))
+                    ack0 = clientSocket.recvfrom((server,port)))
+                    tftp_lib.send_file(clientSocket, server, port, file, size, mode)
                     clientSocket.close()
 
             elif command[0] == 'exit':
