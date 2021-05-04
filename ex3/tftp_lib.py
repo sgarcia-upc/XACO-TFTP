@@ -20,7 +20,7 @@ def send_file(socket, server, port, filename, size, modo):
 
         with open(filename, "rb") as f:
             block_num_ack = 0
-            block_num = 65534
+            block_num = 1
             file_data = f.read(size)
             data = pkg.generate_data(block_num, file_data)
             # TODO: if file is empty
@@ -101,11 +101,8 @@ def recv_file(socket, server, port, filename, size, modo):
             else:
                 file_data = bytes()
             
-            
     except IOError:
         print("File requested not found")
-    except timeout:
-        print("timeout")
     finally:
         try:
             f.close()

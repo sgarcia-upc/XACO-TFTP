@@ -77,7 +77,8 @@ def generate_wrq(filename, mode):
 
 
 def decodificate_wrq(pkg):
-    return decodificate_rrq
+    filename, mode = decodificate_rrq(pkg)
+    return filename, mode
 
 
 # DATA      | 2bytes  |     2bytes     | nBytes |

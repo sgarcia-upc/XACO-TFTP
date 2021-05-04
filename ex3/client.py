@@ -28,9 +28,10 @@ def main(server="localhost", port=12000, size=512):
                     # Send file name
                     file = command[1]
                     mode = "octet"
-                    msg = pkg.generate_rrq(file, mode) 
+                    msg = pkg.generate_rrq(file, mode)
                     clientSocket.sendto(msg,(server,port))
-                    tftp_lib.recv_file(clientSocket, server, port, file, size, "mode")
+                    print("{} {} {}".format("RRQ", file, mode))
+                    tftp_lib.recv_file(clientSocket, server, port, file, size, mode)
                     clientSocket.close()
 
             elif command[0] == 'put':
@@ -42,7 +43,13 @@ def main(server="localhost", port=12000, size=512):
                     mode = "octet"
                     msg = pkg.generate_wrq(file, mode)
                     clientSocket.sendto(msg,(server,port))
-                    ack0 = clientSocket.recvfrom((server,port)))
+                    print("{} {} {}".format("WRQ", file, mode))
+                    ack_num = -1
+                    while ack_num != 0:
+                        ack, add = clientSocket.recvfrom(4)
+                        ack_num =  pkg.decodificate_ack(ack)
+                        print("receiving ACK: %s"%(ack_num))
+                        
                     tftp_lib.send_file(clientSocket, server, port, file, size, mode)
                     clientSocket.close()
 
