@@ -11,13 +11,13 @@ op_codes = {
 
 
 err_codes = {
-    "NotDefined" : struct.pack('BB', 0, 1),
-    "FileNotFound" : struct.pack('BB', 0, 2),
-    "AccesViolation": struct.pack('BB', 0, 3),
-    "DiskFull" : struct.pack('BB', 0, 4),
-    "IllegalOperation" : struct.pack('BB', 0, 5),
-    "FileAlredyExist" : struct.pack('BB', 0, 6),
-    "NoSuchUser" : struct.pack('BB', 0, 7),
+    "NotDefined"        : struct.pack('BB', 0, 1),
+    "FileNotFound"      : struct.pack('BB', 0, 2),
+    "AccesViolation"    : struct.pack('BB', 0, 3),
+    "DiskFull"          : struct.pack('BB', 0, 4),
+    "IllegalOperation"  : struct.pack('BB', 0, 5),
+    "FileAlredyExist"   : struct.pack('BB', 0, 6),
+    "NoSuchUser"        : struct.pack('BB', 0, 7),
 }
 
 
