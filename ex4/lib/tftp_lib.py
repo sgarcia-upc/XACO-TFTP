@@ -2,6 +2,9 @@ import random
 import sys
 import tftp_pkg as pkg
 
+class FileNotFound(Exception):
+    pass
+
 PORT_MIN = 49152
 PORT_MAX = 65535
 
@@ -10,66 +13,69 @@ def generateTID():
 
 
 def send_file(socket, server, port, filename, size, modo):
-    try:
-        if modo=="netascii":
-            m = "r"
-        elif modo=="octet":
-            m = "rb"
-        else:
-            print("NoSuchMODO")
-            sys.exit(1)
+    
+    if modo=="netascii":
+        m = "r"
+    elif modo=="octet":
+        m = "rb"
+    else:
+        print("NoSuchMODO")
+        sys.exit(1)
 
-        with open(filename, m) as f:
-            block_num_ack = 0
-            block_num = 1
-            file_data = f.read(size)
+    with open(filename, m) as f:
+        block_num_ack = 0
+        block_num = 1
+        file_data = f.read(size)
 
-            data = pkg.generate_data(block_num, file_data)
-            # TODO: if file is empty
-            while (len(file_data) > 0):
+        data = pkg.generate_data(block_num, file_data)
+        # TODO: if file is empty
+        while (len(file_data) > 0):
 
-                while(block_num != block_num_ack):
-                    socket.sendto(data, (server, port))
-                    print("sending DATA: %s -- %s"%(block_num, len(file_data)))        
-                    ack, add = socket.recvfrom(4)
-                    block_num_ack =  pkg.decodificate_ack(ack)
-                    print("receiving ACK: %s"%(block_num_ack))
+            while(block_num != block_num_ack):
+                socket.sendto(data, (server, port))
+                print("sending DATA: %s -- %s"%(block_num, len(file_data)))        
+                ack, add = socket.recvfrom(4)
+                block_num_ack =  pkg.decodificate_ack(ack)
+                print("receiving ACK: %s"%(block_num_ack))
 
-                block_num+=1
-                block_num = block_num % 65535
-                if(block_num == 0):
-                    block_num = 1
+            block_num+=1
+            block_num = block_num % 65535
+            if(block_num == 0):
+                block_num = 1
 
-                if(len(file_data) == size):
-                    file_data = f.read(size)
-                    data = pkg.generate_data(block_num, file_data)
-                    if (len(file_data) == 0): 
-                        while(block_num != block_num_ack):
-                            socket.sendto(data, (server, port))
-                            print("sending DATA: %s -- %s"%(block_num, len(file_data)))
-                            ack, add = socket.recvfrom(4)
-                            block_num_ack =  pkg.decodificate_ack(ack)
-                            print("receiving ACK: %s"%(block_num_ack))
-                        block_num+=1
-                        block_num = block_num % 65535
-                        if(block_num == 0):
-                            block_num = 1
-                else:
-                    file_data = bytes()
+            if(len(file_data) == size):
+                file_data = f.read(size)
+                data = pkg.generate_data(block_num, file_data)
+                if (len(file_data) == 0): 
+                    while(block_num != block_num_ack):
+                        socket.sendto(data, (server, port))
+                        print("sending DATA: %s -- %s"%(block_num, len(file_data)))
+                        ack, add = socket.recvfrom(4)
+                        block_num_ack =  pkg.decodificate_ack(ack)
+                        print("receiving ACK: %s"%(block_num_ack))
+                    block_num+=1
+                    block_num = block_num % 65535
+                    if(block_num == 0):
+                        block_num = 1
+            else:
+                file_data = bytes()
                     
             
-    except IOError as e:
-        print("File requested not found")
-        print(e)
+   
 
 def recv_file(socket, server, port, filename, size, modo):
     """
     esperamos los data y enviamos ack cuando los recibimos
     """
     data, addr = socket.recvfrom(4+size)
-    #TODO: mirar si el data tiene op_code data...   
-    num_block, file_data = pkg.decodificate_data(data)
-
+    #TODO: mirar si el data tiene op_code data...  
+    pkg_type = pkg.decodificate_opcode(data)
+    if pkg_type == "DATA":
+        num_block, file_data = pkg.decodificate_data(data)
+    elif pkg_type == "ERR":
+        pkg_type, msg = pkg.decodificate_err(data)
+        raise FileNotFound(msg)
+        
     data = file_data
     if modo == "netascii":
         data = file_data.decode("ascii")

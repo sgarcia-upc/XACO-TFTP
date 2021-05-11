@@ -49,8 +49,10 @@ def main(server="localhost", port=12000, size=512, mode="octet"):
                     msg = pkg.generate_rrq(file, mode)
                     clientSocket.sendto(msg,(server,port))
                     print("{} {} {}".format("RRQ", file, mode))
-                    tftp_lib.recv_file(clientSocket, server, port, file, size, mode)
-                    clientSocket.close()
+                    try:
+                        tftp_lib.recv_file(clientSocket, server, port, file, size, mode)
+                    except tftp_lib.FileNotFound as e:
+                        print(e)
 
             elif command[0] == 'put':
                 if len(command) != 2 and len(command) != 3:
@@ -72,7 +74,6 @@ def main(server="localhost", port=12000, size=512, mode="octet"):
                         print("receiving ACK: %s"%(ack_num))
                         
                     tftp_lib.send_file(clientSocket, server, port, file, size, mode)
-                    clientSocket.close()
 
             elif command[0] == 'exit':
                 sortir = True

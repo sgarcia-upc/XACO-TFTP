@@ -26,7 +26,13 @@ def main(port=12000, size=512):
             filename, mode = pkg.decodificate_rrq(message)
             print("GET /{} {}".format(filename, mode))
             print(clientAddress)
-            tftp_lib.send_file(serverSocket, clientAddress[0], clientAddress[1], filename, size, mode)
+            try:
+                tftp_lib.send_file(serverSocket, clientAddress[0], clientAddress[1], filename, size, mode)
+            except IOError as e:
+                print("Sending error FileNotFound")
+                err = pkg.generate_err("FileNotFound", "We can't found file: '{}'".format(filename))
+                serverSocket.sendto(err, clientAddress)
+                # ~ print(e)
 
         elif (op_code == "WRQ"):
             filename, mode = pkg.decodificate_wrq(message)

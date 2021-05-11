@@ -82,7 +82,7 @@ def decodificate_wrq(pkg):
 
 
 # DATA      | 2bytes  |     2bytes     | nBytes |
-#           | op code |  numero bloque |  data  |
+#           | op code |  numero bloque |  data |
 def generate_data(nck, data):
     pkg = op_codes["DATA"]
     pkg = pkg + struct.pack('>H', nck)
