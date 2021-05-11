@@ -22,8 +22,15 @@ def main(server="localhost", port=12000, size=512, mode="octet"):
                 print(" mode \t\t\t Show actual file transfer mode")
                 print(" octet \t\t\t Change mode to octet")
                 print(" netascii \t\t Change mode to netascii")
+                print(" size [size]\t\t Change pkg size")
                 print(" exit\t\t\t Exit from this program")
                 print(" ?\t\t\t Show this help")
+            elif command[0] == 'size':
+                if (len(command) > 1):
+                    size = command[1]
+                    print("Changed pkg size to: {}".format(size))
+                else:
+                    print("Current pkg size is: {}".format(size))
             elif command[0] == 'octet':
                 mode = "octet"
                 print("Mode changed to: '{}'".format(mode))
@@ -51,9 +58,13 @@ def main(server="localhost", port=12000, size=512, mode="octet"):
 
                 else:
                     file = command[1]
-                    msg = pkg.generate_wrq(file, mode)
+                    filename = file
+                    if len(command) > 2:
+                        filename = command[2] 
+
+                    msg = pkg.generate_wrq(filename, mode)
                     clientSocket.sendto(msg,(server,port))
-                    print("{} {} {}".format("WRQ", file, mode))
+                    print("{} {} {}".format("WRQ", filename, mode))
                     ack_num = -1
                     while ack_num != 0:
                         ack, add = clientSocket.recvfrom(4)
