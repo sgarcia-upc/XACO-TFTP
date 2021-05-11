@@ -19,8 +19,19 @@ def main(server="localhost", port=12000, size=512, mode="octet"):
             if command[0] == '?':
                 print(" get <file>\t\t Download specified file from the server")
                 print(" put <file> [name]\t Upload specified file to the server. The optional name parameter can be used to upload the file with another name")
+                print(" mode \t\t\t Show actual file transfer mode")
+                print(" octet \t\t\t Change mode to octet")
+                print(" netascii \t\t Change mode to netascii")
                 print(" exit\t\t\t Exit from this program")
                 print(" ?\t\t\t Show this help")
+            elif command[0] == 'octet':
+                mode = "octet"
+                print("Mode changed to: '{}'".format(mode))
+            elif command[0] == 'netascii':
+                mode = "netascii"
+                print("Mode changed to: '{}'".format(mode))
+            elif command[0] == 'mode':
+                print("Current mode is: '{}'".format(mode))
             elif command[0] == 'get':
                 if len(command) != 2:
                     invCommand = True

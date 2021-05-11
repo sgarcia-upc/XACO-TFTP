@@ -24,13 +24,13 @@ def main(port=12000, size=512):
         print("Client connected {} -- {} ".format(clientAddress, op_code), end='')
         if (op_code == "RRQ"):
             filename, mode = pkg.decodificate_rrq(message)
-            print("GET /{}".format(filename))
+            print("GET /{} {}".format(filename, mode))
             print(clientAddress)
             tftp_lib.send_file(serverSocket, clientAddress[0], clientAddress[1], filename, size, mode)
 
         elif (op_code == "WRQ"):
             filename, mode = pkg.decodificate_wrq(message)
-            print("PUT /{}".format(filename))
+            print("PUT /{} {}".format(filename, mode))
             
             ack = pkg.generate_ack(0)
             serverSocket.sendto(ack, clientAddress)
