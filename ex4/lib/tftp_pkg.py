@@ -87,7 +87,7 @@ def generate_data(nck, data):
     pkg = op_codes["DATA"]
     pkg = pkg + struct.pack('>H', nck)
     if (isinstance(data, str)):
-        pkg = pkg + bytes(data, "utf-8")
+        pkg = pkg + data.encode("ascii")
     else:
         pkg = pkg + data
     return pkg
@@ -96,6 +96,7 @@ def generate_data(nck, data):
 def decodificate_data(pkg):
     num_block = pkg[3]|pkg[2]<<8
     data = pkg[4:]
+        
     return num_block, data
 
 

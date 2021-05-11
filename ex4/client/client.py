@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+sys.path.append("../lib/")
 import tftp_lib
 import tftp_pkg as pkg
 

@@ -8,6 +8,7 @@ PORT_MAX = 65535
 def generateTID():
     return random.randint(PORT_MIN, PORT_MAX)
 
+
 def send_file(socket, server, port, filename, size, modo):
     try:
         if modo=="netascii":
@@ -18,10 +19,11 @@ def send_file(socket, server, port, filename, size, modo):
             print("NoSuchMODO")
             sys.exit(1)
 
-        with open(filename, "rb") as f:
+        with open(filename, m) as f:
             block_num_ack = 0
             block_num = 1
             file_data = f.read(size)
+
             data = pkg.generate_data(block_num, file_data)
             # TODO: if file is empty
             while (len(file_data) > 0):
@@ -54,11 +56,6 @@ def send_file(socket, server, port, filename, size, modo):
                             block_num = 1
                 else:
                     file_data = bytes()
-                    #while(block_num != block_num_ack):
-                    #        socket.sendto(data, (server, port))
-                    #        ack, add = socket.recvfrom(4)
-                    #        block_num_ack =  pkg.decodificate_ack(ack)
-                    #        print("receiving ACK: %s"%(block_num_ack))
                     
             
     except IOError as e:
@@ -72,6 +69,11 @@ def recv_file(socket, server, port, filename, size, modo):
     data, addr = socket.recvfrom(4+size)
     #TODO: mirar si el data tiene op_code data...   
     num_block, file_data = pkg.decodificate_data(data)
+
+    data = file_data
+    if modo == "netascii":
+        data = file_data.decode("ascii")
+
     print("receiving DATA: %s -- %s"%(num_block, len(file_data)))
     ack = pkg.generate_ack(num_block)
     socket.sendto(ack, (server, port))
@@ -87,13 +89,17 @@ def recv_file(socket, server, port, filename, size, modo):
             sys.exit(1)
         
         while (file_data):
-            f.write(file_data)
+            f.write(data)
             
             if (len(file_data) == size):
                 # Vamos a pedir mas datos en caso de que los haya
                 data, addr = socket.recvfrom(4+size)
                 #TODO: mirar si el data tiene op_code data...
                 num_block, file_data = pkg.decodificate_data(data)
+                data = file_data
+                if modo == "netascii":
+                    data = file_data.decode("utf-8")
+
                 print("receiving DATA: %s -- %s"%(num_block, len(file_data)))
                 ack = pkg.generate_ack(num_block)
                 socket.sendto(ack, (server, port))

@@ -2,6 +2,7 @@
 import sys
 import time
 import argparse
+sys.path.append("../lib/")
 import tftp_lib
 import tftp_pkg as pkg
 
@@ -29,7 +30,7 @@ def main(port=12000, size=512):
 
         elif (op_code == "WRQ"):
             filename, mode = pkg.decodificate_wrq(message)
-            print("PUT {}".format(filename))
+            print("PUT /{}".format(filename))
             
             ack = pkg.generate_ack(0)
             serverSocket.sendto(ack, clientAddress)
