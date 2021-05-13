@@ -23,7 +23,7 @@ def main(port=12000, size=512):
 
         print("Client connected {} -- {} ".format(clientAddress, op_code), end='')
         if (op_code == "RRQ"):
-            filename, mode = pkg.decodificate_rrq(message)
+            filename, mode, option_list = pkg.decodificate_rrq(message)
             print("GET /{} {}".format(filename, mode))
             print(clientAddress)
             try:
@@ -32,12 +32,12 @@ def main(port=12000, size=512):
                 print("Sending error FileNotFound")
                 err = pkg.generate_err("FileNotFound", "We can't found file: '{}'".format(filename))
                 serverSocket.sendto(err, clientAddress)
-                # ~ print(e)
 
         elif (op_code == "WRQ"):
-            filename, mode = pkg.decodificate_wrq(message)
+            filename, mode, option_list = pkg.decodificate_wrq(message)
             print("PUT /{} {}".format(filename, mode))
-            
+            for i in range(0, len(option_list), 2):
+                print ("Option detectet: {} with value {}".format(option_list[i], option_list[i+1]))
             ack = pkg.generate_ack(0)
             serverSocket.sendto(ack, clientAddress)
             print("sending ACK: 0")

@@ -30,12 +30,19 @@ def find_key_by_value(d,val):
 
 def generate_rrq_rrw_pkg(op, filename, mode):
     pkg = op_codes[op]
-    pkg = pkg + bytes(filename, "utf-8")
+    pkg = pkg + bytes(str(filename), "utf-8")
     pkg = pkg + struct.pack('B', 0)
-    pkg = pkg + bytes(mode, "utf-8")
+    pkg = pkg + bytes(str(mode), "utf-8")
     pkg = pkg + struct.pack('B', 0)
     return pkg
-
+    
+def add_option_rrq_wrq(pkg, option_name, value):
+    pkg = pkg + bytes(str(option_name), "utf-8")
+    pkg = pkg + struct.pack('B', 0)
+    pkg = pkg + bytes(str(value), "utf-8")
+    pkg = pkg + struct.pack('B', 0)
+    return pkg
+    
 
 def decodificate_opcode(pkg):
     op_code = struct.pack('BB', 0, pkg[0] + pkg[1])
@@ -53,6 +60,8 @@ def decodificate_rrq(pkg):
     filename = ""
     mode = ""
     last = 2
+    option_list = []
+    option = ""
     for byte in pkg[last:]:
         last += 1
         if (byte == 0):
@@ -66,8 +75,16 @@ def decodificate_rrq(pkg):
             break
 
         mode += chr(byte)
+        
+    for byte in pkg[last:]:
+        last += 1
+        if (byte == 0):
+            option_list.append(option)
+            option = ""
 
-    return filename, mode
+        option += chr(byte)
+
+    return filename, mode, option_list
 
 
 # WRQ       | 2bytes  |     string     | 1byte | string | 1byte
@@ -77,8 +94,8 @@ def generate_wrq(filename, mode):
 
 
 def decodificate_wrq(pkg):
-    filename, mode = decodificate_rrq(pkg)
-    return filename, mode
+    filename, mode, option_list = decodificate_rrq(pkg)
+    return filename, mode, option_list
 
 
 # DATA      | 2bytes  |     2bytes     | nBytes |
@@ -147,16 +164,21 @@ def decodificate_err(pkg):
 
 if __name__ == "__main__":
     pkg = generate_rrq("meh.txt", transmission_mode[0])
-    pkg = generate_data(44, "klashdfkhasdkjfh")
-    pkg = generate_ack(30001)
-    pkg = generate_err("FileNotFound","meh.txt no ta")
+    pkg = add_option_rrq_wrq(pkg, "blksize", "512")
+    # ~ pkg = generate_data(44, "klashdfkhasdkjfh")
+    # ~ pkg = generate_ack(30001)
+    # ~ pkg = generate_err("FileNotFound","meh.txt no ta")
     op_code = decodificate_opcode(pkg)
     if op_code == "RRQ":
-        filename, mode = decodificate_rrq(pkg)
+        filename, mode, option_list = decodificate_rrq(pkg)
         print("RRQ: %s -- %s"%(filename, mode))
+        for option in option_list:
+            print(option)
     elif op_code == "WRQ":
-        filename, mode = decodificate_wrq(pkg)
+        filename, mode, option_list = decodificate_wrq(pkg)
         print("WRQ: %s -- %s"%(filename, mode))
+        for option in option_list:
+            print(option)
     elif op_code == "DATA":
         num_block, data = decodificate_data(pkg)
         print("DATA: %s -- %s"%(num_block, data))
