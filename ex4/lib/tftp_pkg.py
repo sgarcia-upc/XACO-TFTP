@@ -31,19 +31,25 @@ def find_key_by_value(d,val):
 
 def generate_rrq_rrw_pkg(op, filename, mode):
     pkg = op_codes[op]
-    pkg = pkg + bytes(str(filename), "utf-8")
+    pkg = pkg + bytes(to_str(filename), "utf-8")
     pkg = pkg + struct.pack('B', 0)
-    pkg = pkg + bytes(str(mode), "utf-8")
+    pkg = pkg + bytes(to_str(mode), "utf-8")
     pkg = pkg + struct.pack('B', 0)
     return pkg
     
 def add_option_rrq_wrq(pkg, option_name, value):
-    pkg = pkg + bytes(str(option_name), "utf-8")
+    pkg = pkg + bytes(to_str(option_name), "utf-8")
     pkg = pkg + struct.pack('B', 0)
-    pkg = pkg + bytes(str(value), "utf-8")
+    pkg = pkg + bytes(to_str(value), "utf-8")
     pkg = pkg + struct.pack('B', 0)
     return pkg
     
+def to_str(value):
+    if isinstance(value, int):
+        value = int(value)
+    #if not isinstance(value, str):
+        value = str(value)
+    return value
 
 def decodificate_opcode(pkg):
     op_code = struct.pack('BB', 0, pkg[0] + pkg[1])
@@ -82,8 +88,8 @@ def decodificate_rrq(pkg):
         if (byte == 0):
             option_list.append(option)
             option = ""
-
-        option += chr(byte)
+        else:
+            option += chr(byte)
 
     return filename, mode, option_list
 
@@ -176,13 +182,14 @@ def decodificate_oack(pkg):
         if (byte == 0):
             option_list.append(option)
             option = ""
-
-        option += chr(byte)
+        else:
+            option += chr(byte)
 
     return option_list
 
 def add_oack_option(pkg, option_name, value):
-    return add_option_rrq_wrq(pkg, option_name, value)
+    pkg = add_option_rrq_wrq(pkg, option_name, value)
+    return pkg
 
 
 if __name__ == "__main__":
@@ -196,7 +203,7 @@ if __name__ == "__main__":
         filename, mode, option_list = decodificate_rrq(pkg)
         print("RRQ: %s -- %s"%(filename, mode))
         for option in option_list:
-            print(option)
+            print("-- {}".format(option))
     elif op_code == "WRQ":
         filename, mode, option_list = decodificate_wrq(pkg)
         print("WRQ: %s -- %s"%(filename, mode))
@@ -207,6 +214,9 @@ if __name__ == "__main__":
         print("DATA: %s -- %s"%(num_block, data))
     elif op_code == "ACK":
         num_block = decodificate_ack(pkg)
+        print("ACK: %s"%(num_block))
+    elif op_code == "OACK":
+        num_block = decodificate_oack(pkg)
         print("ACK: %s"%(num_block))
     elif op_code == "ERR":
         err_code, msg = decodificate_err(pkg)

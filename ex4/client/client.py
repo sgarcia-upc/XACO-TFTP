@@ -49,7 +49,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                     # Send file name
                     file = command[1]
                     msg = pkg.generate_rrq(file, mode)
-                    msg = pkg.add_option_rrq_wrq(msg, "blksize", size)
+                    msg = pkg.add_option_rrq_wrq(msg, "blksize", str(size))
                     clientSocket.sendto(msg,(server,port))
                     print("{} {} {}".format("RRQ", file, mode))
                     try:
@@ -72,9 +72,11 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                         filename = command[2] 
 
                     msg = pkg.generate_wrq(filename, mode)
-                    msg = pkg.add_option_rrq_wrq(msg, "blksize", size)
-                    msg = pkg.add_option_rrq_wrq(msg, "random1", "200")
-                    msg = pkg.add_option_rrq_wrq(msg, "random2", "589")
+
+                    if size != default_size: 
+                        # Aka size no es 512
+                        msg = pkg.add_option_rrq_wrq(msg, "blksize", str(size))
+
                     clientSocket.sendto(msg,(server,port))
                     print("{} {} {}".format("WRQ", filename, mode))
                     ack_num = -1
@@ -94,7 +96,8 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                             print("Server doesn't accept blksize option")
                         
                     if op_code == "ACK":
-                        print("Server doesn't accept blksize option")
+                        if size != default_size: 
+                            print("Server doesn't accept blksize option")
                         decided_size = size
                         ack_num =  pkg.decodificate_ack(response)
                         print("receiving ACK: %s"%(ack_num))
