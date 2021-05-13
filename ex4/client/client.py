@@ -8,7 +8,8 @@ import tftp_pkg as pkg
 
 from socket import *
 
-def main(server="localhost", port=12000, size=512, mode="octet"):
+def main(server="localhost", port=12000, default_size=512, mode="octet"):
+    size = default_size
     sortir = False
     while sortir == False:
         clientSocket = socket(AF_INET, SOCK_DGRAM)
@@ -77,12 +78,32 @@ def main(server="localhost", port=12000, size=512, mode="octet"):
                     clientSocket.sendto(msg,(server,port))
                     print("{} {} {}".format("WRQ", filename, mode))
                     ack_num = -1
-                    while ack_num != 0:
-                        ack, add = clientSocket.recvfrom(4)
-                        ack_num =  pkg.decodificate_ack(ack)
-                        print("receiving ACK: %s"%(ack_num))
+                    response, add = clientSocket.recvfrom(512)
+                    op_code = pkg.decodificate_opcode(response)
+                    decided_size = size
+                    if op_code == "OACK":
+                        print("receiving OACK")
+                        blksize_detected = False
+                        option_list = pkg.decodificate_oack(response)
+                        for i in range(0, len(option_list), 2):
+                            if option_list[i] == "blksize":
+                                print ("Server accepted: {} with value {}".format(option_list[i], option_list[i+1]))
+                                blksize_detected = True
+                        if blksize_detected == False:
+                            decided_size = defalut_size
+                            print("Server doesn't accept blksize option")
                         
-                    tftp_lib.send_file(clientSocket, server, port, file, size, mode)
+                    if op_code == "ACK":
+                        print("Server doesn't accept blksize option")
+                        decided_size = size
+                        ack_num =  pkg.decodificate_ack(response)
+                        print("receiving ACK: %s"%(ack_num))
+                        while ack_num != 0:
+                            ack, add = clientSocket.recvfrom(4)
+                            ack_num =  pkg.decodificate_ack(ack)
+                            print("receiving ACK: %s"%(ack_num))
+                        
+                    tftp_lib.send_file(clientSocket, server, port, file, decided_size, mode)
 
             elif command[0] == 'exit':
                 sortir = True
@@ -115,4 +136,4 @@ if __name__ == "__main__":
         print("El puerto debe ser un numero desde el 0 al {}".format(2**16-1))
         sys.exit(1)
 
-    main(server=args.server, port=int(args.port), size=int(args.size), mode=args.mode)
+    main(server=args.server, port=int(args.port), default_size=int(args.size), mode=args.mode)

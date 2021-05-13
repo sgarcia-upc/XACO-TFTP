@@ -7,6 +7,7 @@ op_codes = {
     "DATA": struct.pack('BB', 0, 3),
     "ACK" : struct.pack('BB', 0, 4),
     "ERR" : struct.pack('BB', 0, 5),
+    "OACK" : struct.pack('BB', 0, 6),
 }
 
 
@@ -160,6 +161,28 @@ def decodificate_err(pkg):
 
         msg += chr(byte)
     return err_code, msg
+
+def generate_oack():
+    pkg = op_codes["OACK"]
+    return pkg
+
+def decodificate_oack(pkg):
+    last = 2
+    option_list = []
+    option = ""
+        
+    for byte in pkg[last:]:
+        last += 1
+        if (byte == 0):
+            option_list.append(option)
+            option = ""
+
+        option += chr(byte)
+
+    return option_list
+
+def add_oack_option(pkg, option_name, value):
+    return add_option_rrq_wrq(pkg, option_name, value)
 
 
 if __name__ == "__main__":

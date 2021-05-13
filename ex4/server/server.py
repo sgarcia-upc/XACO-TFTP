@@ -36,12 +36,23 @@ def main(port=12000, size=512):
         elif (op_code == "WRQ"):
             filename, mode, option_list = pkg.decodificate_wrq(message)
             print("PUT /{} {}".format(filename, mode))
+            blksize = None
             for i in range(0, len(option_list), 2):
-                print ("Option detectet: {} with value {}".format(option_list[i], option_list[i+1]))
-            ack = pkg.generate_ack(0)
-            serverSocket.sendto(ack, clientAddress)
-            print("sending ACK: 0")
-
+                if option_list[i] == "blksize":
+                    print ("Option detectet: {} with value {}".format(option_list[i], option_list[i+1]))
+                    blksize = option_list[i+1]
+            if blksize == None:
+                ack = pkg.generate_ack(0)
+                serverSocket.sendto(ack, clientAddress)
+                print("sending ACK: 0")
+            else:
+                oack = pkg.generate_oack()
+                print(oack)
+                oack = pkg.add_oack_option(oack, "blksize", blksize)
+                print(oack)
+                serverSocket.sendto(oack, clientAddress)
+                print("sending OACK with blksize = {}".format(blksize))
+                
             tftp_lib.recv_file(serverSocket, clientAddress[0], clientAddress[1], filename, size, mode)
 
         print()
