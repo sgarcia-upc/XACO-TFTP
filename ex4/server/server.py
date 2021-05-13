@@ -30,7 +30,7 @@ def main(port=12000, size=512):
                 tftp_lib.send_file(serverSocket, clientAddress[0], clientAddress[1], filename, size, mode)
             except IOError as e:
                 print("Sending error FileNotFound")
-                err = pkg.generate_err("FileNotFound", "We can't found file: '{}'".format(filename))
+                err = pkg.generate_err("FileNotFound", "Server: we can't found file: '{}'".format(filename))
                 serverSocket.sendto(err, clientAddress)
 
         elif (op_code == "WRQ"):
@@ -43,6 +43,8 @@ def main(port=12000, size=512):
             print("sending ACK: 0")
 
             tftp_lib.recv_file(serverSocket, clientAddress[0], clientAddress[1], filename, size, mode)
+
+        print()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

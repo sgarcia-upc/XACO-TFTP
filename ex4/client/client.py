@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import sys
+import os.path
 import argparse
 sys.path.append("../lib/")
 import tftp_lib
@@ -61,7 +62,11 @@ def main(server="localhost", port=12000, size=512, mode="octet"):
 
                 else:
                     file = command[1]
+                    if not os.path.isfile(file):
+                        print("File: '{}' not found".format(file))
+                        continue # Ask option again
                     filename = file
+                    
                     if len(command) > 2:
                         filename = command[2] 
 
