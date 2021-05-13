@@ -49,11 +49,14 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                     # Send file name
                     file = command[1]
                     msg = pkg.generate_rrq(file, mode)
-                    msg = pkg.add_option_rrq_wrq(msg, "blksize", str(size))
+                    if size != default_size: 
+                        msg = pkg.add_option_rrq_wrq(msg, "blksize", str(size))
+
                     clientSocket.sendto(msg,(server,port))
+                    decided_size = size
                     print("{} {} {}".format("RRQ", file, mode))
                     try:
-                        tftp_lib.recv_file(clientSocket, server, port, file, size, mode)
+                        tftp_lib.recv_file(clientSocket, server, port, file, decided_size, mode)
                     except tftp_lib.FileNotFound as e:
                         print(e)
 
