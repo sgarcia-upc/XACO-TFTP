@@ -28,7 +28,6 @@ def send_file(socket, server, port, filename, size, modo):
         file_data = f.read(size)
 
         data = pkg.generate_data(block_num, file_data)
-        # TODO: if file is empty
         while (len(file_data) > 0):
 
             while(block_num != block_num_ack):
