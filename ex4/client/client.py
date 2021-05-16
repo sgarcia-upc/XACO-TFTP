@@ -41,6 +41,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
         while sortir == False:
             addr = (server, port)
             clientSocket = socket(AF_INET, SOCK_DGRAM)
+            clientSocket.bind(('', tftp_lib.generateTID()))
             invCommand = False
             # Read in some text from the user
             msg = input('> ')
@@ -85,6 +86,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
 
                         # recibir mensaje
                         msg, addr = clientSocket.recvfrom(size+4) # +4 por si es un data
+                        print(addr)
 
                         decided_size = size 
 
@@ -102,7 +104,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
 
                             ack = pkg.generate_ack(0)
                             print("sending ACK: 0")
-                            clientSocket.sendto(ack, (server, port))
+                            clientSocket.sendto(ack, (addr[0], addr[1]))
                             data, addr = clientSocket.recvfrom(decided_size+4) # esperamos el data 1
 
                         elif pkg.decodificate_opcode(msg) == "DATA":
@@ -110,6 +112,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                             data = msg
                 
                         try:
+                            print(addr)
                             tftp_lib.recv_file(clientSocket, addr[0], addr[1], file, decided_size, mode, data)
                         except tftp_lib.FileNotFound as e:
                             print(e)
@@ -162,7 +165,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                                 print("Server doesn't accept blksize option")
                             decided_size = size
                             ack_num =  pkg.decodificate_ack(response)
-                            print("receiving ACK: %s from {}:{}".format(ack_num, addr[0], addr[1]))
+                            print("receiving ACK: {} from {}:{}".format(ack_num, addr[0], addr[1]))
                             while ack_num != 0:
                                 ack, addr = clientSocket.recvfrom(4)
                                 ack_num =  pkg.decodificate_ack(ack)
@@ -170,7 +173,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                                 print(addr)
                             
                         try:
-                            tftp_lib.send_file(clientSocket, server, port, file, decided_size, mode)
+                            tftp_lib.send_file(clientSocket, addr[0], addr[1], file, decided_size, mode)
                         except tftp_lib.DiskFull as e:
                             print("Server ERROR: {}".format(e))
                         except tftp_lib.UnknownException as e:

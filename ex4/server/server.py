@@ -10,9 +10,9 @@ import tftp_pkg as pkg
 from socket import *
 
 
-def rrq_worker(message, size, tid_port,serverSocket, clientAddress):
-    #serverSocket = socket(AF_INET, SOCK_DGRAM)
-    #serverSocket.bind(('', tid_port))
+def rrq_worker(message, size, tid_port, clientAddress):
+    serverSocket = socket(AF_INET, SOCK_DGRAM)
+    serverSocket.bind(('', tid_port))
 
     filename, mode, option_list = pkg.decodificate_rrq(message)
     print("GET /{} {}".format(filename, mode))
@@ -48,9 +48,19 @@ def rrq_worker(message, size, tid_port,serverSocket, clientAddress):
         err = pkg.generate_err("FileNotFound", "Server: we can't found file: '{}'".format(filename))
         serverSocket.sendto(err, clientAddress)
 
-def rrw_worker(message, size, tid_server,serverSocket, clientAddress):
+    try:
+        serverSocket.close()
+    except:
+        pass
+
+def rrw_worker(message, size, tid_port, clientAddress):
+    serverSocket = socket(AF_INET, SOCK_DGRAM)
+    serverSocket.bind(('', tid_port))
     filename, mode, option_list = pkg.decodificate_wrq(message)
+   
     print("PUT /{} {}".format(filename, mode))
+    print(clientAddress)
+    print("TID: %s"%tid_port)
     blksize = None
     decided_size = size
     for i in range(0, len(option_list), 2):
@@ -74,6 +84,10 @@ def rrw_worker(message, size, tid_server,serverSocket, clientAddress):
     except tftp_lib.FileNotFound as e:
         print(e)
 
+    try:
+        serverSocket.close()
+    except:
+        pass
 
 def main(port=12000, size=512):
 
@@ -93,17 +107,17 @@ def main(port=12000, size=512):
         print("Client connected {} -- {} ".format(clientAddress, op_code), end='')
         if (op_code == "RRQ"):
             port = tftp_lib.generateTID()
-            #t = threading.Thread(target=rrq_worker, args=(message, size, port ,serverSocket, clientAddress, ))
-            #threads.append(t)
-            #t.start()
+            t = threading.Thread(target=rrq_worker, args=(message, size, port , clientAddress, ))
+            threads.append(t)
+            t.daemon = True
+            t.start()
 
-            rrq_worker(message, size, port, serverSocket, clientAddress)
         elif (op_code == "WRQ"):
             port = tftp_lib.generateTID()
-            #t = threading.Thread(target=rrw_worker, args=(message, size, port, serverSocket, clientAddress, ))
-            #threads.append(t)
-            #t.start()
-            rrw_worker(message, size, port, serverSocket, clientAddress)
+            t = threading.Thread(target=rrw_worker, args=(message, size, port, clientAddress, ))
+            threads.append(t)
+            t.daemon = True
+            t.start()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
