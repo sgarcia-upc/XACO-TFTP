@@ -85,11 +85,12 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                         print("{} {} {}".format("RRQ", file, mode))
 
                         # recibir mensaje
-                        msg, addr = clientSocket.recvfrom(size+4) # +4 por si es un data
+                        msg, addr = clientSocket.recvfrom(tftp_lib.RCV_SIZE) # +4 por si es un data
                         print(addr)
 
                         decided_size = size 
 
+                        blksize_detected = False
                         if pkg.decodificate_opcode(msg) == "OACK":
                             print("receiving OACK from {}:{}".format(addr[0], addr[1]))
                             option_list = pkg.decodificate_oack(msg)
@@ -144,7 +145,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                         clientSocket.sendto(msg,(server,port))
                         print("{} {} {}".format("WRQ", filename, mode))
                         ack_num = -1
-                        response, addr = clientSocket.recvfrom(512)
+                        response, addr = clientSocket.recvfrom(tftp_lib.RCV_SIZE)
                         op_code = pkg.decodificate_opcode(response)
                         decided_size = size
                         if op_code == "OACK":
@@ -167,7 +168,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                             ack_num =  pkg.decodificate_ack(response)
                             print("receiving ACK: {} from {}:{}".format(ack_num, addr[0], addr[1]))
                             while ack_num != 0:
-                                ack, addr = clientSocket.recvfrom(4)
+                                ack, addr = clientSocket.recvfrom(tftp_lib.RCV_SIZE)
                                 ack_num =  pkg.decodificate_ack(ack)
                                 print("receiving ACK: %s"%(ack_num))
                                 print(addr)

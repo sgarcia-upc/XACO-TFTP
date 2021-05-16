@@ -33,7 +33,7 @@ def rrq_worker(message, size, tid_port, clientAddress):
         serverSocket.sendto(oack, clientAddress)
         print("sending OACK with blksize = {}".format(blksize))
 
-        msg, addr = serverSocket.recvfrom(decided_size) # recibimos ack0
+        msg, addr = serverSocket.recvfrom(tftp_lib.RCV_SIZE) # recibimos ack0
         block_num_ack = pkg.decodificate_ack(msg)       # decode
         print("receiving ACK: %s from %s:%s"%(block_num_ack, addr[0], addr[1]))
 
@@ -101,7 +101,7 @@ def main(port=12000, size=512):
 
     print ("Esperando conexiones...")
     while True:
-        message, clientAddress = serverSocket.recvfrom(size)
+        message, clientAddress = serverSocket.recvfrom(tftp_lib.RCV_SIZE)
         op_code = pkg.decodificate_opcode(message)
 
         print("Client connected {} -- {} ".format(clientAddress, op_code), end='')

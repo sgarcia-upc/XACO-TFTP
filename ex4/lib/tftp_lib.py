@@ -14,6 +14,7 @@ class UnknownException(Exception):
 
 PORT_MIN = 49152
 PORT_MAX = 65535
+RCV_SIZE = 512
 
 def generateTID():
     return random.randint(PORT_MIN, PORT_MAX)
@@ -40,7 +41,7 @@ def send_file(socket, server, port, filename, size, modo):
             while(block_num != block_num_ack):
                 socket.sendto(data, (server, port))
                 print("sending DATA: %s -- %s"%(block_num, len(file_data)))        
-                ack, addr = socket.recvfrom(512)
+                ack, addr = socket.recvfrom(RCV_SIZE)
                 if pkg.decodificate_opcode(ack) == "ACK":
                     block_num_ack =  pkg.decodificate_ack(ack)
                     print("receiving ACK: {} from {}:{}".format(block_num_ack, addr[0], addr[1]))
@@ -64,7 +65,7 @@ def send_file(socket, server, port, filename, size, modo):
                     while(block_num != block_num_ack):
                         socket.sendto(data, (server, port))
                         print("sending DATA: %s -- %s"%(block_num, len(file_data)))
-                        ack, addr = socket.recvfrom(4)
+                        ack, addr = socket.recvfrom(RCV_SIZE)
                         block_num_ack =  pkg.decodificate_ack(ack)
                         print("receiving ACK: {} from {}:{}".format(block_num_ack, addr[0], addr[1]))
                     block_num+=1
