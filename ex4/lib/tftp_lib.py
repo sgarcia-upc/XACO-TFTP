@@ -40,10 +40,10 @@ def send_file(socket, server, port, filename, size, modo):
             while(block_num != block_num_ack):
                 socket.sendto(data, (server, port))
                 print("sending DATA: %s -- %s"%(block_num, len(file_data)))        
-                ack, add = socket.recvfrom(512)
+                ack, addr = socket.recvfrom(512)
                 if pkg.decodificate_opcode(ack) == "ACK":
                     block_num_ack =  pkg.decodificate_ack(ack)
-                    print("receiving ACK: %s"%(block_num_ack))
+                    print("receiving ACK: {} from {}:{}".format(block_num_ack, addr[0], addr[1]))
                 elif pkg.decodificate_opcode(ack) == "ERR":
                     err_code, msg = pkg.decodificate_err(ack)
                     if (err_code == "DiskFull"):
@@ -64,9 +64,9 @@ def send_file(socket, server, port, filename, size, modo):
                     while(block_num != block_num_ack):
                         socket.sendto(data, (server, port))
                         print("sending DATA: %s -- %s"%(block_num, len(file_data)))
-                        ack, add = socket.recvfrom(4)
+                        ack, addr = socket.recvfrom(4)
                         block_num_ack =  pkg.decodificate_ack(ack)
-                        print("receiving ACK: %s"%(block_num_ack))
+                        print("receiving ACK: {} from {}:{}".format(block_num_ack, addr[0], addr[1]))
                     block_num+=1
                     block_num = block_num % 65535
                     if(block_num == 0):
@@ -83,6 +83,8 @@ def recv_file(socket, server, port, filename, size, modo, data=None):
     """
     if data == None:
         data, addr = socket.recvfrom(4+size)
+    else:
+        addr = (server, port)
 
     pkg_type = pkg.decodificate_opcode(data)
     if pkg_type == "DATA":
@@ -95,7 +97,7 @@ def recv_file(socket, server, port, filename, size, modo, data=None):
     if modo == "netascii":
         data = file_data.decode("ascii")
 
-    print("receiving DATA: %s -- %s"%(num_block, len(file_data)))
+    print("receiving DATA: {} -- {} from {}:{}".format(num_block, len(file_data), addr[0], addr[1]))
     ack = pkg.generate_ack(num_block)
     socket.sendto(ack, (server, port))
     print("sending ACK: %s"%(num_block))
@@ -123,7 +125,7 @@ def recv_file(socket, server, port, filename, size, modo, data=None):
                 if modo == "netascii":
                     data = file_data.decode("utf-8")
 
-                print("receiving DATA: %s -- %s"%(num_block, len(file_data)))
+                print("receiving DATA: {} -- {} from {}:{}".format(num_block, len(file_data), addr[0], addr[1]))
                 ack = pkg.generate_ack(num_block)
                 socket.sendto(ack, (server, port))
                 print("sending ACK: %s"%(num_block))

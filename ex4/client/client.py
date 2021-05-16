@@ -39,6 +39,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
         size = default_size
         sortir = False
         while sortir == False:
+            addr = (server, port)
             clientSocket = socket(AF_INET, SOCK_DGRAM)
             invCommand = False
             # Read in some text from the user
@@ -88,7 +89,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                         decided_size = size 
 
                         if pkg.decodificate_opcode(msg) == "OACK":
-                            print("receiving OACK")
+                            print("receiving OACK from {}:{}".format(addr[0], addr[1]))
                             option_list = pkg.decodificate_oack(msg)
                             for i in range(0, len(option_list), 2):
                                 if option_list[i] == "blksize":
@@ -109,7 +110,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                             data = msg
                 
                         try:
-                            tftp_lib.recv_file(clientSocket, server, port, file, decided_size, mode, data)
+                            tftp_lib.recv_file(clientSocket, addr[0], addr[1], file, decided_size, mode, data)
                         except tftp_lib.FileNotFound as e:
                             print(e)
                         except tftp_lib.DiskFull as e:
@@ -140,11 +141,12 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                         clientSocket.sendto(msg,(server,port))
                         print("{} {} {}".format("WRQ", filename, mode))
                         ack_num = -1
-                        response, add = clientSocket.recvfrom(512)
+                        response, addr = clientSocket.recvfrom(512)
                         op_code = pkg.decodificate_opcode(response)
                         decided_size = size
                         if op_code == "OACK":
-                            print("receiving OACK")
+                            print("receiving OACK from {}:{}".format(addr[0], addr[1]))
+                            print(addr)
                             blksize_detected = False
                             option_list = pkg.decodificate_oack(response)
                             for i in range(0, len(option_list), 2):
@@ -160,11 +162,12 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                                 print("Server doesn't accept blksize option")
                             decided_size = size
                             ack_num =  pkg.decodificate_ack(response)
-                            print("receiving ACK: %s"%(ack_num))
+                            print("receiving ACK: %s from {}:{}".format(ack_num, addr[0], addr[1]))
                             while ack_num != 0:
-                                ack, add = clientSocket.recvfrom(4)
+                                ack, addr = clientSocket.recvfrom(4)
                                 ack_num =  pkg.decodificate_ack(ack)
                                 print("receiving ACK: %s"%(ack_num))
+                                print(addr)
                             
                         try:
                             tftp_lib.send_file(clientSocket, server, port, file, decided_size, mode)
