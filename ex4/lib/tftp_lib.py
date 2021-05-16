@@ -1,8 +1,15 @@
 import random
+import os
 import sys
 import tftp_pkg as pkg
 
 class FileNotFound(Exception):
+    pass
+
+class DiskFull(Exception):
+    pass
+
+class UnknownException(Exception):
     pass
 
 PORT_MIN = 49152
@@ -33,9 +40,17 @@ def send_file(socket, server, port, filename, size, modo):
             while(block_num != block_num_ack):
                 socket.sendto(data, (server, port))
                 print("sending DATA: %s -- %s"%(block_num, len(file_data)))        
-                ack, add = socket.recvfrom(4)
-                block_num_ack =  pkg.decodificate_ack(ack)
-                print("receiving ACK: %s"%(block_num_ack))
+                ack, add = socket.recvfrom(512)
+                if pkg.decodificate_opcode(ack) == "ACK":
+                    block_num_ack =  pkg.decodificate_ack(ack)
+                    print("receiving ACK: %s"%(block_num_ack))
+                elif pkg.decodificate_opcode(ack) == "ERR":
+                    err_code, msg = pkg.decodificate_err(ack)
+                    if (err_code == "DiskFull"):
+                        raise DiskFull(msg)
+                    else:
+                        raise UnknownException(msg)
+                    
 
             block_num+=1
             block_num = block_num % 65535
@@ -62,12 +77,13 @@ def send_file(socket, server, port, filename, size, modo):
             
    
 
-def recv_file(socket, server, port, filename, size, modo):
+def recv_file(socket, server, port, filename, size, modo, data=None):
     """
     esperamos los data y enviamos ack cuando los recibimos
     """
-    data, addr = socket.recvfrom(4+size)
-    #TODO: mirar si el data tiene op_code data...  
+    if data == None:
+        data, addr = socket.recvfrom(4+size)
+
     pkg_type = pkg.decodificate_opcode(data)
     if pkg_type == "DATA":
         num_block, file_data = pkg.decodificate_data(data)
@@ -94,6 +110,8 @@ def recv_file(socket, server, port, filename, size, modo):
             sys.exit(1)
         
         while (file_data):
+            # TODO: calcular si queda espacio
+            # si queda menos de len(data)
             f.write(data)
             
             if (len(file_data) == size):
@@ -111,7 +129,16 @@ def recv_file(socket, server, port, filename, size, modo):
                 print("sending ACK: %s"%(num_block))
             else:
                 file_data = bytes()
-            
+
+    except OSError as e:
+        if (e.args[0] == 28): # No space left on device
+            # Recogemos el dato que no cabe
+            data, addr = socket.recvfrom(4+size)
+            os.remove(filename)
+            msg = pkg.generate_err("DiskFull", e.args[1])
+            socket.sendto(msg, (server,port))
+            print("Sending ERROR: DiskFull")
+         
     except IOError:
         print("File requested not found")
     finally:

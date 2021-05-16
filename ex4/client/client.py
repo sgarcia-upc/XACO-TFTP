@@ -80,11 +80,41 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                             msg = pkg.add_option_rrq_wrq(msg, "blksize", str(size))
 
                         clientSocket.sendto(msg,(server,port))
-                        decided_size = size
                         print("{} {} {}".format("RRQ", file, mode))
+
+                        # recibir mensaje
+                        msg, addr = clientSocket.recvfrom(size+4) # +4 por si es un data
+
+                        decided_size = size 
+
+                        if pkg.decodificate_opcode(msg) == "OACK":
+                            print("receiving OACK")
+                            option_list = pkg.decodificate_oack(msg)
+                            for i in range(0, len(option_list), 2):
+                                if option_list[i] == "blksize":
+                                    print ("Server accepted: {} with value {}".format(option_list[i], option_list[i+1]))
+                                    blksize_detected = True
+
+                            if blksize_detected == False:
+                                decided_size = default_size
+                                print("Server doesn't accept blksize option")
+
+                            ack = pkg.generate_ack(0)
+                            print("sending ACK: 0")
+                            clientSocket.sendto(ack, (server, port))
+                            data, addr = clientSocket.recvfrom(decided_size+4) # esperamos el data 1
+
+                        elif pkg.decodificate_opcode(msg) == "DATA":
+                            decided_size = default_size
+                            data = msg
+                
                         try:
-                            tftp_lib.recv_file(clientSocket, server, port, file, decided_size, mode)
+                            tftp_lib.recv_file(clientSocket, server, port, file, decided_size, mode, data)
                         except tftp_lib.FileNotFound as e:
+                            print(e)
+                        except tftp_lib.DiskFull as e:
+                            print(e)
+                        except tftp_lib.UnknownException as e:
                             print(e)
 
                 elif command[0] == 'put':
@@ -122,7 +152,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                                     print ("Server accepted: {} with value {}".format(option_list[i], option_list[i+1]))
                                     blksize_detected = True
                             if blksize_detected == False:
-                                decided_size = defalut_size
+                                decided_size = default_size
                                 print("Server doesn't accept blksize option")
                             
                         if op_code == "ACK":
@@ -136,7 +166,12 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                                 ack_num =  pkg.decodificate_ack(ack)
                                 print("receiving ACK: %s"%(ack_num))
                             
-                        tftp_lib.send_file(clientSocket, server, port, file, decided_size, mode)
+                        try:
+                            tftp_lib.send_file(clientSocket, server, port, file, decided_size, mode)
+                        except tftp_lib.DiskFull as e:
+                            print("Server ERROR: {}".format(e))
+                        except tftp_lib.UnknownException as e:
+                            print("Server ERROR: {}".format(e))
 
                 elif command[0] == 'exit':
                     sortir = True

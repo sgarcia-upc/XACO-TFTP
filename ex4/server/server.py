@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import time
+import threading
 import argparse
 sys.path.append("../lib/")
 import tftp_lib
@@ -8,10 +9,74 @@ import tftp_pkg as pkg
 
 from socket import *
 
+
+def rrq_worker(message, size, serverSocket, clientAddress):
+    filename, mode, option_list = pkg.decodificate_rrq(message)
+    print("GET /{} {}".format(filename, mode))
+    print(clientAddress)
+
+    blksize = None
+    decided_size = size
+    for i in range(0, len(option_list), 2):
+        if option_list[i] == "blksize":
+            print ("Option detectet: {} with value {}".format(option_list[i], option_list[i+1]))
+            blksize = option_list[i+1]
+
+    if blksize != None:
+        oack = pkg.generate_oack()
+        oack = pkg.add_oack_option(oack, "blksize", blksize)
+        decided_size = int(blksize)
+        serverSocket.sendto(oack, clientAddress)
+        print("sending OACK with blksize = {}".format(blksize))
+
+        msg, addr = serverSocket.recvfrom(decided_size) # recivimos ack0
+        block_num_ack = pkg.decodificate_ack(msg)       # decode
+        print("receiving ACK: %s"%(block_num_ack))
+
+    try:
+        tftp_lib.send_file(serverSocket, clientAddress[0], clientAddress[1], filename, decided_size, mode)
+    except tftp_lib.DiskFull as e:
+        print("ERROR: {}".format(e))
+    except tftp_lib.UnknownException as e:
+        print("ERROR: {}".format(e))
+    except IOError as e:
+        print("Sending error FileNotFound")
+        err = pkg.generate_err("FileNotFound", "Server: we can't found file: '{}'".format(filename))
+        serverSocket.sendto(err, clientAddress)
+
+def rrw_worker(message, size, serverSocket, clientAddress):
+    filename, mode, option_list = pkg.decodificate_wrq(message)
+    print("PUT /{} {}".format(filename, mode))
+    blksize = None
+    decided_size = size
+    for i in range(0, len(option_list), 2):
+        if option_list[i] == "blksize":
+            print ("Option detectet: {} with value {}".format(option_list[i], option_list[i+1]))
+            blksize = option_list[i+1]
+
+    if blksize == None:
+        ack = pkg.generate_ack(0)
+        serverSocket.sendto(ack, clientAddress)
+        print("sending ACK: 0")
+    else:
+        oack = pkg.generate_oack()
+        oack = pkg.add_oack_option(oack, "blksize", blksize)
+        decided_size = int(blksize)
+        serverSocket.sendto(oack, clientAddress)
+        print("sending OACK with blksize = {}".format(blksize))
+        
+    try:
+        tftp_lib.recv_file(serverSocket, clientAddress[0], clientAddress[1], filename, decided_size, mode)
+    except tftp_lib.FileNotFound as e:
+        print(e)
+
+
 def main(port=12000, size=512):
 
     # Setup IPv4 UDP socket
     serverSocket = socket(AF_INET, SOCK_DGRAM)
+
+    threads = []
 
     # Specify the welcoming port of the server
     serverSocket.bind(('', port))
@@ -23,40 +88,16 @@ def main(port=12000, size=512):
 
         print("Client connected {} -- {} ".format(clientAddress, op_code), end='')
         if (op_code == "RRQ"):
-            filename, mode, option_list = pkg.decodificate_rrq(message)
-            print("GET /{} {}".format(filename, mode))
-            print(clientAddress)
-            try:
-                tftp_lib.send_file(serverSocket, clientAddress[0], clientAddress[1], filename, size, mode)
-            except IOError as e:
-                print("Sending error FileNotFound")
-                err = pkg.generate_err("FileNotFound", "Server: we can't found file: '{}'".format(filename))
-                serverSocket.sendto(err, clientAddress)
+            #t = threading.Thread(target=rrq_worker, args=(message, size, port ,serverSocket, clientAddress, ))
+            #threads.append(t)
+            #t.start()
 
+            rrq_worker(message, size, serverSocket, clientAddress)
         elif (op_code == "WRQ"):
-            filename, mode, option_list = pkg.decodificate_wrq(message)
-            print("PUT /{} {}".format(filename, mode))
-            blksize = None
-            decided_size = size
-            for i in range(0, len(option_list), 2):
-                if option_list[i] == "blksize":
-                    print ("Option detectet: {} with value {}".format(option_list[i], option_list[i+1]))
-                    blksize = option_list[i+1]
-
-            if blksize == None:
-                ack = pkg.generate_ack(0)
-                serverSocket.sendto(ack, clientAddress)
-                print("sending ACK: 0")
-            else:
-                oack = pkg.generate_oack()
-                oack = pkg.add_oack_option(oack, "blksize", blksize)
-                decided_size = int(blksize)
-                serverSocket.sendto(oack, clientAddress)
-                print("sending OACK with blksize = {}".format(blksize))
-                
-            tftp_lib.recv_file(serverSocket, clientAddress[0], clientAddress[1], filename, decided_size, mode)
-
-        print()
+            #t = threading.Thread(target=rrw_worker, args=(message, size, port, serverSocket, clientAddress, ))
+            #threads.append(t)
+            #t.start()
+            rrw_worker(message, size, serverSocket, clientAddress)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
