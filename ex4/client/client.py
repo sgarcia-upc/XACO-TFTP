@@ -12,17 +12,10 @@ import tftp_pkg as pkg
 
 from socket import *
 
-def complete(text,state):
-    command_list = ["put", "get"]
-    reults = None
-    if state == 0:
-        results = command_list[state]
-
-    return results
-
+# Fichero donde se guardara un historial de comandos usados
 histfile = os.path.join(os.path.expanduser("~"), ".tftp_history")
 try:
-    open(histfile, mode='a').close()     # Create history file if not exists
+    open(histfile, mode='a').close()     # Se crea el fichero si no existe
     readline.read_history_file(histfile)
     # default history len is -1 (infinite), which may grow unruly
     readline.set_history_length(1000)
@@ -35,6 +28,15 @@ except FileNotFoundError:
 atexit.register(readline.write_history_file, histfile)
 
 def main(server="localhost", port=12000, default_size=512, mode="octet"):
+    """
+    Aqui tenemos un bucle principal donde tenemos la interfaz del cliente y donde se interactua 
+    con el servidor. 
+
+    server: ip o dominio del servidor
+    port: puerto del servidor
+    default_size: tamaño por defecto de los paquetes
+    mode: metodo por defecto de transmission
+    """
     try:
         size = default_size
         sortir = False
@@ -53,7 +55,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                     print(" mode \t\t\t Show actual file transfer mode")
                     print(" octet \t\t\t Change mode to octet")
                     print(" netascii \t\t Change mode to netascii")
-                    print(" size [size]\t\t Change pkg size")
+                    print(" size [size]\t\t Show/Change pkg size")
                     print(" exit\t\t\t Exit from this program")
                     print(" ?\t\t\t Show this help")
                 elif command[0] == 'size':
@@ -74,10 +76,10 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                     if len(command) != 2:
                         invCommand = True
 
-                    if not invCommand:
-                        # Send file name
+                    if not invCommand: # si hemos llegado aqui significa que no tenemos ningun error parseando el comando
                         file = command[1]
                         msg = pkg.generate_rrq(file, mode)
+                        # Se añadira al rrq un blksize si se desea un tamaño diferente a 512
                         if size != default_size: 
                             msg = pkg.add_option_rrq_wrq(msg, "blksize", str(size))
 
@@ -85,7 +87,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
                         print("{} {} {}".format("RRQ", file, mode))
 
                         # recibir mensaje
-                        msg, addr = clientSocket.recvfrom(tftp_lib.RCV_SIZE) # +4 por si es un data
+                        msg, addr = clientSocket.recvfrom(tftp_lib.RCV_SIZE+4) # +4 por si es un data
                         print(addr)
 
                         decided_size = size 
@@ -138,6 +140,7 @@ def main(server="localhost", port=12000, default_size=512, mode="octet"):
 
                         msg = pkg.generate_wrq(filename, mode)
 
+                        # Se añadira al rrq un blksize si se desea un tamaño diferente a 512
                         if size != default_size: 
                             # Aka size no es 512
                             msg = pkg.add_option_rrq_wrq(msg, "blksize", str(size))

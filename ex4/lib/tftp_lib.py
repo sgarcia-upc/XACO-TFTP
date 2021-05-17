@@ -3,6 +3,7 @@ import os
 import sys
 import tftp_pkg as pkg
 
+# Lista de excepciones usadas en el tftp
 class FileNotFound(Exception):
     pass
 
@@ -17,10 +18,23 @@ PORT_MAX = 65535
 RCV_SIZE = 512
 
 def generateTID():
+    """
+    RETORNA un numero random desde PORT_MIN HASTA PORT_MAX
+    """
     return random.randint(PORT_MIN, PORT_MAX)
 
 
 def send_file(socket, server, port, filename, size, modo):
+    """
+        Funcion generica para enviar un fichero
+
+        socket: conexion viva con el cliente/server
+        server: ip del server/cliente
+        port:   puerto del server/cliente
+        filename: path del fichero a transmitir
+        size: tamaño de los paquetes de data
+        modo: metodo de transmission del fichero
+    """
     
     if modo=="netascii":
         m = "r"
@@ -80,7 +94,16 @@ def send_file(socket, server, port, filename, size, modo):
 
 def recv_file(socket, server, port, filename, size, modo, data=None):
     """
-    esperamos los data y enviamos ack cuando los recibimos
+        Funcion generica para recibit un fichero 
+
+
+        socket: conexion viva con el cliente/server
+        server: ip del server/cliente
+        port:   puerto del server/cliente
+        filename: path del fichero a transmitir
+        size: tamaño de los paquetes de data
+        modo: metodo de transmission del fichero
+        data: De existir significara que el cliente/server ya recibio el data1 
     """
     if data == None:
         data, addr = socket.recvfrom(4+size)
@@ -113,14 +136,11 @@ def recv_file(socket, server, port, filename, size, modo, data=None):
             sys.exit(1)
         
         while (file_data):
-            # TODO: calcular si queda espacio
-            # si queda menos de len(data)
             f.write(data)
             
             if (len(file_data) == size):
                 # Vamos a pedir mas datos en caso de que los haya
                 data, addr = socket.recvfrom(4+size)
-                #TODO: mirar si el data tiene op_code data...
                 num_block, file_data = pkg.decodificate_data(data)
                 data = file_data
                 if modo == "netascii":
